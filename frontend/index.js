@@ -1,6 +1,7 @@
 import React, {useContext} from "react";
 import styled from "styled-components";
 import {initializeBlock} from "@airtable/blocks/ui";
+import AirtableConfiguration from "./components/AirtableConfiguration";
 import {
     AirtableContext,
     AirtableContextProvider,
@@ -11,9 +12,12 @@ const Wrapper = styled.div`
 `;
 const App = () => {
     const {selectedTable} = useContext(AirtableContext);
-    console.log("billal", {selectedTable});
 
-    return <Wrapper>hello</Wrapper>;
+    return (
+        <Wrapper>
+            <AirtableConfiguration />
+        </Wrapper>
+    );
 };
 
 initializeBlock(() => (
