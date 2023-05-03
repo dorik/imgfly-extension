@@ -1,60 +1,31 @@
 import React, {createContext, useState, useEffect} from "react";
-export const AirtableContext = createContext();
-import {useBase} from "@airtable/blocks/ui";
+import {CONTEXT_STATE} from "../const";
+export const AirtableContext = React.createContext();
+export const AirtableContextProvider = ({children}) => {
+    const [state, setState] = useState();
 
-export const AirtableContextProvider = ({children, value}) => {
-    const [state, setstate] = useState();
-    const base = useBase();
-
-    const handleSelectTable = (value) => {
-        setstate((prev) => ({
-            ...prev,
-            selectedTable: value,
-            selectedField: "",
-        }));
-    };
-    const handleSelectField = (value) => {
-        setstate((prev) => ({...prev, selectedField: value}));
+    const handleUpdateState = (value) => {
+        setState((prev) => ({...prev, ...value}));
     };
 
     useEffect(() => {
-        if (state?.selectedTable) {
-            const table = base.getTableByName(state.selectedTable);
-
-            const airtableFields = table.fields.map((field) => {
-                console.log("billal", {field});
-
-                return {
-                    label: field.name,
-                    value: field.name,
-                    type: field.type,
-                };
-            });
-
-            setstate((prev) => ({...prev, airtableFields}));
-        }
-    }, [base, state?.selectedTable]);
-
-    useEffect(() => {
-        state && localStorage.setItem("_state", JSON.stringify(state));
-    }, [state]);
-
-    useEffect(() => {
-        const storedValue = localStorage.getItem("_state");
+        const storedValue = localStorage.getItem(CONTEXT_STATE);
         if (storedValue) {
-            setstate(JSON.parse(storedValue));
+            setState(JSON.parse(storedValue));
         }
     }, []);
 
+    useEffect(() => {
+        state && localStorage.setItem(CONTEXT_STATE, JSON.stringify(state));
+    }, [state]);
+
     const ctx = {
-        base,
         ...state,
-        handleSelectTable,
-        handleSelectField,
+        handleUpdateState,
     };
 
     return (
-        <AirtableContext.Provider value={{...value, ...ctx}}>
+        <AirtableContext.Provider value={ctx}>
             {children}
         </AirtableContext.Provider>
     );
