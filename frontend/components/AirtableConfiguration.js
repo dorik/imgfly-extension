@@ -2,6 +2,7 @@ import React, {useContext} from "react";
 import {Select} from "antd";
 import {AirtableContext} from "../context/AirtableContext";
 import {useBase} from "@airtable/blocks/ui";
+import {Label} from "./Label";
 
 function AirtableConfiguration() {
     const {selectedTable, handleUpdateState} = useContext(AirtableContext);
@@ -19,7 +20,7 @@ function AirtableConfiguration() {
 
     return (
         <div>
-            <strong>Table</strong>
+            <Label>Table</Label>
             <Select
                 options={tableOptions}
                 value={selectedTable}

@@ -12,6 +12,8 @@ import useGetAirtableFields from "../hooks/useGetAirtableFields";
 import {FORM_STATE, SHOULD_UPDATE} from "../const";
 import {getFormatedValue} from "../utils/getFormatedValue";
 import {useState} from "react";
+import useLocalStorage from "../hooks/useLocalStorage";
+import {Label} from "./Label";
 const updateTypeOpts = [
     {label: "Update as Image", value: "image"},
     {label: "Update as URL", value: "url"},
@@ -19,6 +21,8 @@ const updateTypeOpts = [
 
 const DynamicForm = () => {
     const {selectedTable, selectedTemplate} = useContext(AirtableContext);
+    const {data: initialValue, setItem} = useLocalStorage(FORM_STATE);
+
     const {airtableFields} = useGetAirtableFields();
     const [form] = Form.useForm();
     const base = useBase();
@@ -30,7 +34,7 @@ const DynamicForm = () => {
         const {outputField, updateType, fields} = values;
         const table = base.getTable(selectedTable);
         const records = await table.selectRecordsAsync();
-        localStorage.setItem(FORM_STATE, JSON.stringify(values));
+        setItem(FORM_STATE, values);
 
         if (outputField) {
             let result = records.records
@@ -41,7 +45,6 @@ const DynamicForm = () => {
                         const payload = generatePayload(res);
                         let imgPath = `https://imgfly.dorik.dev/t/${selectedTemplate.id}?${payload}`;
                         let updateValue = imgPath;
-                        console.log("billal", {imgPath});
 
                         if (updateType === "image") {
                             updateValue = [
@@ -66,8 +69,6 @@ const DynamicForm = () => {
     };
 
     useEffect(() => {
-        let initialValue = JSON.parse(localStorage.getItem(FORM_STATE) || null);
-
         if (initialValue) {
             return form.setFieldsValue(initialValue);
         }
@@ -83,7 +84,7 @@ const DynamicForm = () => {
             form.setFieldsValue({fields, outputField: ""});
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [airtableFields, selectedTemplate]);
+    }, [airtableFields, initialValue, selectedTemplate]);
 
     const _fields = useMemo(() => {
         const types = {
@@ -135,13 +136,13 @@ const DynamicForm = () => {
                     )}
                 </Form.List>
 
-                <Form.Item name="updateType" label="Update Type">
+                <FormItem name="updateType" label="Update Type">
                     <Select options={updateTypeOpts} />
-                </Form.Item>
+                </FormItem>
 
-                <Form.Item name="outputField" label="Output Field">
+                <FormItem name="outputField" label="Output Field">
                     <Select options={_fields} />
-                </Form.Item>
+                </FormItem>
             </FormItem>
             <FormItem>
                 <Button loading={loading} type="primary" htmlType="submit">
@@ -154,5 +155,8 @@ const DynamicForm = () => {
 
 const FormItem = styled(Form.Item)`
     margin-bottom: 10px;
+    label {
+        font-weight: 600;
+    }
 `;
 export default DynamicForm;

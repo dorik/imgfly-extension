@@ -1,7 +1,9 @@
 import React, {createContext, useState, useEffect} from "react";
 import {CONTEXT_STATE} from "../const";
-export const AirtableContext = React.createContext();
+import useLocalStorage from "../hooks/useLocalStorage";
+export const AirtableContext = createContext();
 export const AirtableContextProvider = ({children}) => {
+    const {getItem, setItem} = useLocalStorage();
     const [state, setState] = useState();
 
     const handleUpdateState = (value) => {
@@ -9,14 +11,14 @@ export const AirtableContextProvider = ({children}) => {
     };
 
     useEffect(() => {
-        const storedValue = localStorage.getItem(CONTEXT_STATE);
+        const storedValue = getItem(CONTEXT_STATE);
         if (storedValue) {
-            setState(JSON.parse(storedValue));
+            setState(storedValue);
         }
     }, []);
 
     useEffect(() => {
-        state && localStorage.setItem(CONTEXT_STATE, JSON.stringify(state));
+        state && setItem(CONTEXT_STATE, state);
     }, [state]);
 
     const ctx = {

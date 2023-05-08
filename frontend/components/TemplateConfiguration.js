@@ -4,9 +4,13 @@ import {useGetTemplates} from "../app/queries/template";
 import {useContext} from "react";
 import {AirtableContext} from "../context/AirtableContext";
 import {FORM_STATE} from "../const";
+import {Label} from "./Label";
+import useLocalStorage from "../hooks/useLocalStorage";
+import {SyncOutlined} from "@ant-design/icons";
 
 function TemplateConfiguration() {
-    const {templates = []} = useGetTemplates();
+    const {templates = [], refetch, loading} = useGetTemplates();
+    const {data, setItem} = useLocalStorage(FORM_STATE);
     const {selectedTemplate, handleUpdateState} = useContext(AirtableContext);
     const tamplateOpts = templates.map((template) => ({
         label: template.name,
@@ -25,12 +29,35 @@ function TemplateConfiguration() {
             values.layers = selectedTemplate.layers;
         }
         handleUpdateState({selectedTemplate: values});
-        localStorage.setItem(FORM_STATE, null);
+        setItem(FORM_STATE, null);
+    };
+
+    const handleRefresh = () => {
+        refetch();
+        const _selectedTemplate = templates.find(
+            (template) => template._id === selectedTemplate.id
+        );
+
+        const fields = _selectedTemplate.layers.flatMap((layer) => {
+            return layer.fields.map((field) => ({
+                path: `${field.label}.${field.type}`,
+                type: field.type,
+                value: [],
+            }));
+        });
+        setItem(FORM_STATE, {...data, fields});
     };
 
     return (
         <div>
-            <strong>Select Template</strong>
+            <Label>
+                Select Template{" "}
+                <SyncOutlined
+                    onClick={handleRefresh}
+                    className="refresh-icon"
+                    spin={loading}
+                />
+            </Label>
             <Select
                 allowClear
                 options={tamplateOpts}
