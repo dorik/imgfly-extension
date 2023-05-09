@@ -1,77 +1,46 @@
-import React, {useMemo} from "react";
-import styled from "styled-components";
-import {PlusOutlined} from "@ant-design/icons";
-import {Button, Form, Select} from "antd";
-import {useContext} from "react";
-import {AirtableContext} from "../context/AirtableContext";
 import FieldRow from "./FieldRow";
-import {useEffect} from "react";
-import {generatePayload} from "../utils/generatePayload";
-import {useBase} from "@airtable/blocks/ui";
+import styled from "styled-components";
+import {Button, Form, Select} from "antd";
+import {PlusOutlined} from "@ant-design/icons";
+import {AirtableContext} from "../context/AirtableContext";
+import React, {useState, useContext, useEffect} from "react";
 import useGetAirtableFields from "../hooks/useGetAirtableFields";
-import {FORM_STATE, SHOULD_UPDATE} from "../const";
-import {getFormatedValue} from "../utils/getFormatedValue";
-import {useState} from "react";
-import useLocalStorage from "../hooks/useLocalStorage";
-import {Label} from "./Label";
+import useUpdateAirtableBase from "../hooks/useUpdateAirtableBase";
+
 const updateTypeOpts = [
     {label: "Update as Image", value: "image"},
     {label: "Update as URL", value: "url"},
 ];
 
+const getSelectedFieldTypeOpts = ({updateType, airtableFields = []}) => {
+    const types = {
+        image: ["multipleAttachments"],
+        url: ["multilineText", "singleLineText"],
+    }[updateType || "url"];
+
+    return airtableFields.filter((field) => types.includes(field.type));
+};
+
 const DynamicForm = () => {
-    const {selectedTable, selectedTemplate} = useContext(AirtableContext);
-    const {data: initialValue, setItem} = useLocalStorage(FORM_STATE);
-
     const {airtableFields} = useGetAirtableFields();
+    const {loading, updateRecords} = useUpdateAirtableBase();
+    const [outputFieldOpts, setOutputFieldOpts] = useState([]);
+    const {formValue, selectedTemplate} = useContext(AirtableContext);
+
     const [form] = Form.useForm();
-    const base = useBase();
-    const [updateType, setUpdateType] = useState("image");
-    const [loading, setLoading] = useState(false);
-
     const onFinish = async (values) => {
-        setLoading(true);
-        const {outputField, updateType, fields} = values;
-        const table = base.getTable(selectedTable);
-        const records = await table.selectRecordsAsync();
-        setItem(FORM_STATE, values);
+        await updateRecords({values});
+    };
 
-        if (outputField) {
-            let result = records.records
-                .map((record) => {
-                    const shouldUpdate = record.getCellValue(SHOULD_UPDATE);
-                    if (shouldUpdate) {
-                        const res = getFormatedValue(record, fields);
-                        const payload = generatePayload(res);
-                        let imgPath = `https://imgfly.dorik.dev/t/${selectedTemplate.id}?${payload}`;
-                        let updateValue = imgPath;
-
-                        if (updateType === "image") {
-                            updateValue = [
-                                {
-                                    url: imgPath,
-                                    filename: `${selectedTemplate.name}.png`,
-                                },
-                            ];
-                        }
-                        return {
-                            id: record.id,
-                            fields: {
-                                [outputField]: updateValue,
-                            },
-                        };
-                    }
-                })
-                .filter((v) => v);
-            await table.updateRecordsAsync(result);
-            setLoading(false);
+    const handleValueChange = ({updateType}) => {
+        if (updateType) {
+            form.setFieldValue("outputField");
+            let fields = getSelectedFieldTypeOpts({updateType, airtableFields});
+            setOutputFieldOpts(fields);
         }
     };
 
     useEffect(() => {
-        if (initialValue) {
-            return form.setFieldsValue(initialValue);
-        }
         if (selectedTemplate.layers) {
             const fields = selectedTemplate.layers.flatMap((layer) => {
                 return layer.fields.map((field) => ({
@@ -83,23 +52,21 @@ const DynamicForm = () => {
 
             form.setFieldsValue({fields, outputField: ""});
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [airtableFields, initialValue, selectedTemplate]);
+    }, [form, selectedTemplate]);
 
-    const _fields = useMemo(() => {
-        const types = {
-            image: ["multipleAttachments"],
-            url: ["multilineText", "singleLineText"],
-        }[updateType || "url"];
-
-        return airtableFields.filter((field) => types.includes(field.type));
-    }, [airtableFields, updateType]);
-
-    const handleValueChange = ({updateType}) => {
-        if (updateType) {
-            setUpdateType(updateType);
+    useEffect(() => {
+        if (formValue) {
+            form.setFieldsValue(formValue);
         }
-    };
+    }, [form, formValue]);
+
+    useEffect(() => {
+        let fields = getSelectedFieldTypeOpts({
+            updateType: "image",
+            airtableFields,
+        });
+        setOutputFieldOpts(fields);
+    }, []);
 
     return (
         <Form
@@ -136,12 +103,24 @@ const DynamicForm = () => {
                     )}
                 </Form.List>
 
-                <FormItem name="updateType" label="Update Type">
+                <FormItem
+                    rules={[
+                        {required: true, message: "Please Select UpdateType"},
+                    ]}
+                    name="updateType"
+                    label="Update Type"
+                >
                     <Select options={updateTypeOpts} />
                 </FormItem>
 
-                <FormItem name="outputField" label="Output Field">
-                    <Select options={_fields} />
+                <FormItem
+                    rules={[
+                        {required: true, message: "Please Select Output Field"},
+                    ]}
+                    name="outputField"
+                    label="Output Field"
+                >
+                    <Select options={outputFieldOpts} />
                 </FormItem>
             </FormItem>
             <FormItem>

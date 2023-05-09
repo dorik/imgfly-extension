@@ -11,5 +11,6 @@ const LabelStr = styled.div`
     font-size: 14px;
     .refresh-icon {
         cursor: pointer;
+        margin-left: 5px;
     }
 `;

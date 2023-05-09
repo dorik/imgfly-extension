@@ -1,5 +1,5 @@
 import React, {createContext, useState, useEffect} from "react";
-import {CONTEXT_STATE} from "../const";
+import {CONTEXT_STATE, FORM_STATE} from "../const";
 import useLocalStorage from "../hooks/useLocalStorage";
 export const AirtableContext = createContext();
 export const AirtableContextProvider = ({children}) => {
@@ -18,8 +18,12 @@ export const AirtableContextProvider = ({children}) => {
     }, []);
 
     useEffect(() => {
+        setState((prev) => ({...prev, formValue: getItem(FORM_STATE)}));
+    }, []);
+
+    useEffect(() => {
         state && setItem(CONTEXT_STATE, state);
-    }, [state]);
+    }, [state, setItem]);
 
     const ctx = {
         ...state,

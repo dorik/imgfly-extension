@@ -8,19 +8,26 @@ import {
     AirtableContext,
     AirtableContextProvider,
 } from "./context/AirtableContext";
+import APIKey from "./components/APIKey";
 
 const Wrapper = styled.div`
     padding: 20px;
 `;
 const App = () => {
-    const {selectedTable, selectedTemplate} = useContext(AirtableContext);
+    const {apiKey, selectedTable, selectedTemplate} =
+        useContext(AirtableContext);
     const enableForm = selectedTable && selectedTemplate?.id;
 
     return (
         <Wrapper>
-            <TemplateConfiguration />
-            <AirtableConfiguration />
-            {enableForm && <DynamicForm />}
+            <APIKey />
+            {apiKey ? (
+                <React.Fragment>
+                    <TemplateConfiguration />
+                    <AirtableConfiguration />
+                    {enableForm && <DynamicForm />}
+                </React.Fragment>
+            ) : null}
         </Wrapper>
     );
 };

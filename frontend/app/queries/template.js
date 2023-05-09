@@ -1,11 +1,13 @@
 import axios from "axios";
 import {useState, useEffect} from "react";
 
-const getTemplates = (cb) => {
+const getTemplates = async (cb) => {
     cb({loading: true});
-    axios.get("https://imgfly.dorik.dev/api/v1/templates").then((res) => {
-        cb({...res.data, loading: false});
-    });
+    const {data} = await axios.get("https://imgfly.dorik.dev/api/v1/templates");
+    if (data) {
+        cb({...data, loading: false});
+        return data;
+    }
 };
 
 export const useGetTemplates = () => {
