@@ -5,7 +5,7 @@ const isStringValue = (field) => {
 export const getAirtableFieldOpts = (fields, type, record) => {
     if (!type) return [];
     switch (type) {
-        case "src": {
+        case "image": {
             let attachmentFields = fields.filter(
                 (field) => field.type === "multipleAttachments"
             );
@@ -19,17 +19,18 @@ export const getAirtableFieldOpts = (fields, type, record) => {
                         {
                             label: "Main Image",
                             type: field.type,
-                            value: value[0].url,
+                            value: "url",
                         },
-                    ].concat(
-                        Object.entries(value[0].thumbnails).map(
-                            ([key, val]) => ({
+                    ];
+                    if (value[0].thumbnails) {
+                        Object.entries(value[0].thumbnails).forEach(([key]) => {
+                            opts.push({
                                 label: `Thumbnails ${key}`,
-                                value: val.url,
+                                value: `thumbnails/${key}/url`,
                                 type: field.type,
-                            })
-                        )
-                    );
+                            });
+                        });
+                    }
                 }
 
                 return {...field, children: opts};

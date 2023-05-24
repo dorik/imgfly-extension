@@ -39,7 +39,7 @@ function TemplateConfiguration() {
             (template) => template._id === selectedTemplate.id
         );
 
-        const _fields = _selectedTemplate.layers.flatMap((layer) => {
+        const fields = _selectedTemplate.layers.flatMap((layer) => {
             return layer.fields.map((field) => ({
                 path: `${field.label}.${field.type}`,
                 type: field.type,
@@ -47,8 +47,9 @@ function TemplateConfiguration() {
             }));
         });
 
+        let obj = {...data, fields};
         if (data) {
-            let fields = _fields.map((field) => {
+            obj.fields = fields.map((field) => {
                 const _field = data?.fields.find(
                     (storedField) => storedField.path === field.path
                 );
@@ -59,8 +60,11 @@ function TemplateConfiguration() {
                 }
             });
 
-            setItem(FORM_STATE, {...data, fields});
-            handleUpdateState({formValue: {...data, fields}});
+            setItem(FORM_STATE, obj);
+            handleUpdateState({formValue: obj});
+        } else {
+            setItem(FORM_STATE, obj);
+            handleUpdateState({formValue: obj});
         }
     };
 
