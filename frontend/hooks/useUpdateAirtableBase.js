@@ -25,12 +25,13 @@ function useUpdateAirtableBase() {
             let result = records.records
                 .map((record) => {
                     const shouldUpdate = record.getCellValue(SHOULD_UPDATE);
+
                     if (shouldUpdate) {
                         const res = getFormatedValue(record, fields);
                         const payload = generatePayload(res);
                         let imgPath = `https://imgfly.dorik.dev/t/${selectedTemplate.id}?${payload}`;
-                        let updateValue = imgPath;
 
+                        let updateValue = imgPath;
                         if (updateType === "image") {
                             updateValue = [
                                 {
@@ -39,6 +40,13 @@ function useUpdateAirtableBase() {
                                 },
                             ];
                         }
+
+                        const checkResult =
+                            table.checkPermissionsForUpdateRecord(record, {
+                                [outputField]: updateValue,
+                            });
+
+                        if (!checkResult.hasPermission) return null;
                         return {
                             id: record.id,
                             fields: {

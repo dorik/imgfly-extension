@@ -9,22 +9,6 @@ import {useBase, useRecords} from "@airtable/blocks/ui";
 import {getAirtableFieldOpts} from "../utils/getAirtableFieldOpts";
 import useGetAirtableFields from "../hooks/useGetAirtableFields";
 
-const layerStr = [
-    {id: "Text_1", dynamicField: ["text", "color"]},
-    {id: "Text_2", dynamicField: ["text"]},
-    {id: "Image_3", dynamicField: ["src"]},
-    {id: "Rect_1", dynamicField: ["color"]},
-];
-
-const layerOpts = layerStr.flatMap((layer) => {
-    return layer.dynamicField.map((field) => {
-        return {
-            label: `${layer.id}.${field}`,
-            value: `${layer.id}.${field}`,
-        };
-    });
-});
-
 function FieldRow({remove, name, form, ...restField}) {
     const base = useBase();
     const {airtableFields} = useGetAirtableFields();
@@ -51,7 +35,6 @@ function FieldRow({remove, name, form, ...restField}) {
             }
             return field;
         });
-
         form.setFieldValue("fields", fieldValue);
     };
 
@@ -69,7 +52,7 @@ function FieldRow({remove, name, form, ...restField}) {
                 gap: 10,
             }}
         >
-            <FormItem {...restField} name={[name, "path"]} style={{}}>
+            <FormItem {...restField} name={[name, "path"]}>
                 <Select
                     options={layerOpts}
                     showSearch

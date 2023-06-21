@@ -1,14 +1,33 @@
 const isStringValue = (field) => {
-    return ["singleLineText", "number", "multilineText"].includes(field.type);
+    return ![
+        "multipleAttachments",
+        "multipleCollaborators",
+        "multipleLookupValues",
+        "barcode",
+        "externalSyncSource",
+        "multipleRecordLinks",
+        "checkbox",
+        "Collaborator",
+        "singleCollaborator",
+        "date",
+        "lastModifiedBy",
+        "createdBy",
+        "multipleSelects",
+        "createdTime",
+        "dateTime",
+        "createdTime",
+        "lastModifiedTime",
+    ].includes(field.type);
 };
+
+const isAttachmentValueField = (field) =>
+    ["multipleAttachments"].includes(field.type);
 
 export const getAirtableFieldOpts = (fields, type, record) => {
     if (!type) return [];
     switch (type) {
         case "image": {
-            let attachmentFields = fields.filter(
-                (field) => field.type === "multipleAttachments"
-            );
+            let attachmentFields = fields.filter(isAttachmentValueField);
 
             attachmentFields = attachmentFields.map((field) => {
                 let value = record.getCellValue(field.value);

@@ -1,4 +1,4 @@
-import React, {useContext} from "react";
+import React, {useContext, useEffect} from "react";
 import {Select} from "antd";
 import {useGetTemplates} from "../app/queries/template";
 import {AirtableContext} from "../context/AirtableContext";
@@ -8,10 +8,12 @@ import useLocalStorage from "../hooks/useLocalStorage";
 import {SyncOutlined} from "@ant-design/icons";
 
 function TemplateConfiguration() {
-    const {templates = [], refetch, loading} = useGetTemplates();
-    const {data, setItem} = useLocalStorage(FORM_STATE);
     const {apiKey, selectedTemplate, handleUpdateState} =
         useContext(AirtableContext);
+    const {templates = [], refetch, loading} = useGetTemplates({apiKey});
+    const {data, setItem} = useLocalStorage(FORM_STATE);
+
+    // creating template options
     const tamplateOpts = templates.map((template) => ({
         label: template.name,
         value: template._id,
@@ -28,6 +30,8 @@ function TemplateConfiguration() {
             values.name = selectedTemplate.name;
             values.layers = selectedTemplate.layers;
         }
+
+        // update localstate and context with selected template
         handleUpdateState({selectedTemplate: values, formValue: null});
         setItem(FORM_STATE, null);
     };
@@ -35,10 +39,14 @@ function TemplateConfiguration() {
     const handleRefresh = async () => {
         let {templates} = await refetch();
 
+        if (!selectedTemplate || !templates) return;
+
+        // finding selected template on refresh
         const _selectedTemplate = templates.find(
             (template) => template._id === selectedTemplate.id
         );
 
+        // preparing fiels from  selected template layer on refresh
         const fields = _selectedTemplate.layers.flatMap((layer) => {
             return layer.fields.map((field) => ({
                 path: `${field.label}.${field.type}`,
@@ -47,26 +55,25 @@ function TemplateConfiguration() {
             }));
         });
 
+        // keeping field values as it is if value exist in localstorage
         let obj = {...data, fields};
         if (data) {
             obj.fields = fields.map((field) => {
                 const _field = data?.fields.find(
                     (storedField) => storedField.path === field.path
                 );
-                if (_field) {
-                    return _field;
-                } else {
-                    return field;
-                }
+                return _field || field;
             });
-
-            setItem(FORM_STATE, obj);
-            handleUpdateState({formValue: obj});
-        } else {
-            setItem(FORM_STATE, obj);
-            handleUpdateState({formValue: obj});
         }
+
+        // update localstate and context with selected template
+        setItem(FORM_STATE, obj);
+        handleUpdateState({formValue: obj});
     };
+
+    useEffect(() => {
+        apiKey && refetch();
+    }, [apiKey]);
 
     return (
         <>

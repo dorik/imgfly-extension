@@ -19,7 +19,7 @@ function AirtableConfiguration() {
         })) || [];
 
     return (
-        <div>
+        <>
             <Label>Table</Label>
             <Select
                 options={tableOptions}
@@ -27,7 +27,7 @@ function AirtableConfiguration() {
                 onChange={handleSelectTable}
                 style={{width: "100%", marginTop: 5, marginBottom: 10}}
             />
-        </div>
+        </>
     );
 }
 

@@ -6,20 +6,12 @@ import {AirtableContext} from "../context/AirtableContext";
 import React, {useState, useContext, useEffect} from "react";
 import useGetAirtableFields from "../hooks/useGetAirtableFields";
 import useUpdateAirtableBase from "../hooks/useUpdateAirtableBase";
+import {getSelectedFieldTypeOpts} from "../utils/getSelectedFieldTypeOpts";
 
 const updateTypeOpts = [
     {label: "Update as Image", value: "image"},
     {label: "Update as URL", value: "url"},
 ];
-
-const getSelectedFieldTypeOpts = ({updateType, airtableFields = []}) => {
-    const types = {
-        image: ["multipleAttachments"],
-        url: ["multilineText", "singleLineText"],
-    }[updateType || "url"];
-
-    return airtableFields.filter((field) => types.includes(field.type));
-};
 
 const DynamicForm = () => {
     const {airtableFields} = useGetAirtableFields();
@@ -41,6 +33,7 @@ const DynamicForm = () => {
     };
 
     useEffect(() => {
+        // preparing fiels from  selected template layer
         if (selectedTemplate.layers) {
             const fields = selectedTemplate.layers.flatMap((layer) => {
                 return layer.fields.map((field) => ({
