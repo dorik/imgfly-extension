@@ -1,15 +1,16 @@
-import React, {useContext} from "react";
+import React from "react";
 import {Select} from "antd";
-import {AirtableContext} from "../context/AirtableContext";
-import {useBase} from "@airtable/blocks/ui";
 import {Label} from "./Label";
+import {useBase, useGlobalConfig} from "@airtable/blocks/ui";
 
 function AirtableConfiguration() {
-    const {selectedTable, handleUpdateState} = useContext(AirtableContext);
     const base = useBase();
+    const globalConfig = useGlobalConfig();
+    const selectedTable = globalConfig.get("selectedTable");
 
-    const handleSelectTable = (value) => {
-        handleUpdateState({selectedTable: value, outputField: ""});
+    const handleSelectTable = async (value) => {
+        await globalConfig.setAsync("selectedTable", value);
+        await globalConfig.setAsync("outputField", "");
     };
 
     const tableOptions =

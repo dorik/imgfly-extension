@@ -2,8 +2,8 @@ import FieldRow from "./FieldRow";
 import styled from "styled-components";
 import {Button, Form, Select} from "antd";
 import {PlusOutlined} from "@ant-design/icons";
-import {AirtableContext} from "../context/AirtableContext";
-import React, {useState, useContext, useEffect} from "react";
+import React, {useState, useEffect} from "react";
+import {useGlobalConfig} from "@airtable/blocks/ui";
 import useGetAirtableFields from "../hooks/useGetAirtableFields";
 import useUpdateAirtableBase from "../hooks/useUpdateAirtableBase";
 import {getSelectedFieldTypeOpts} from "../utils/getSelectedFieldTypeOpts";
@@ -17,7 +17,11 @@ const DynamicForm = () => {
     const {airtableFields} = useGetAirtableFields();
     const {loading, updateRecords} = useUpdateAirtableBase();
     const [outputFieldOpts, setOutputFieldOpts] = useState([]);
-    const {formValue, selectedTemplate} = useContext(AirtableContext);
+
+    const globalConfig = useGlobalConfig();
+    const formValue = globalConfig.get("formValue");
+    const selectedTable = globalConfig.get("selectedTable");
+    const selectedTemplate = globalConfig.get("selectedTemplate");
 
     const [form] = Form.useForm();
     const onFinish = async (values) => {
@@ -54,12 +58,13 @@ const DynamicForm = () => {
     }, [form, formValue]);
 
     useEffect(() => {
+        const updateType = form.getFieldValue("updateType");
         let fields = getSelectedFieldTypeOpts({
-            updateType: "image",
+            updateType: updateType || "image",
             airtableFields,
         });
         setOutputFieldOpts(fields);
-    }, []);
+    }, [selectedTable]);
 
     return (
         <Form

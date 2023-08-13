@@ -1,17 +1,16 @@
-import React, {useContext, useEffect} from "react";
-import {Select} from "antd";
-import {useGetTemplates} from "../app/queries/template";
-import {AirtableContext} from "../context/AirtableContext";
-import {FORM_STATE} from "../const";
 import {Label} from "./Label";
-import useLocalStorage from "../hooks/useLocalStorage";
+import {Select} from "antd";
+import React, {useEffect} from "react";
 import {SyncOutlined} from "@ant-design/icons";
+import {useGlobalConfig} from "@airtable/blocks/ui";
+import {useGetTemplates} from "../app/queries/template";
 
 function TemplateConfiguration() {
-    const {apiKey, selectedTemplate, handleUpdateState} =
-        useContext(AirtableContext);
-    const {templates = [], refetch, loading} = useGetTemplates({apiKey});
-    const {data, setItem} = useLocalStorage(FORM_STATE);
+    const globalConfig = useGlobalConfig();
+    const apiKey = globalConfig.get("apiKey");
+    const selectedTemplate = globalConfig.get("selectedTemplate");
+    const {templates = [], refetch, loading} = useGetTemplates();
+    const formValue = globalConfig.get("formValue");
 
     // creating template options
     const tamplateOpts = templates.map((template) => ({
@@ -31,9 +30,9 @@ function TemplateConfiguration() {
             values.layers = selectedTemplate.layers;
         }
 
-        // update localstate and context with selected template
-        handleUpdateState({selectedTemplate: values, formValue: null});
-        setItem(FORM_STATE, null);
+        // update global config selected template
+        globalConfig.setAsync("selectedTemplate", values);
+        globalConfig.setAsync("formValue", null);
     };
 
     const handleRefresh = async () => {
@@ -55,20 +54,18 @@ function TemplateConfiguration() {
             }));
         });
 
-        // keeping field values as it is if value exist in localstorage
-        let obj = {...data, fields};
-        if (data) {
+        // keeping field values as it is if value exist in global settings
+        let obj = {...formValue, fields};
+        if (formValue) {
             obj.fields = fields.map((field) => {
-                const _field = data?.fields.find(
+                const _field = formValue?.fields.find(
                     (storedField) => storedField.path === field.path
                 );
                 return _field || field;
             });
         }
 
-        // update localstate and context with selected template
-        setItem(FORM_STATE, obj);
-        handleUpdateState({formValue: obj});
+        globalConfig.setAsync("formValue", obj);
     };
 
     useEffect(() => {

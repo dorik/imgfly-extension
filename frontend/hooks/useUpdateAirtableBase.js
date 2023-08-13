@@ -1,15 +1,14 @@
-import {useBase} from "@airtable/blocks/ui";
-import {useContext, useState} from "react";
-import {AirtableContext} from "../context/AirtableContext";
-import useLocalStorage from "./useLocalStorage";
-import {FORM_STATE, SHOULD_UPDATE} from "../const";
-import {getFormatedValue} from "../utils/getFormatedValue";
+import {useState} from "react";
+import {SHOULD_UPDATE, API_URL} from "../const";
 import {generatePayload} from "../utils/generatePayload";
+import {getFormatedValue} from "../utils/getFormatedValue";
+import {useBase, useGlobalConfig} from "@airtable/blocks/ui";
+import {notification} from "antd";
 
 function useUpdateAirtableBase() {
-    const {selectedTable, selectedTemplate, handleUpdateState} =
-        useContext(AirtableContext);
-    const {setItem} = useLocalStorage();
+    const globalConfig = useGlobalConfig();
+    const selectedTable = globalConfig.get("selectedTable");
+    const selectedTemplate = globalConfig.get("selectedTemplate");
     const [loading, setLoading] = useState(false);
     const base = useBase();
 
@@ -18,25 +17,32 @@ function useUpdateAirtableBase() {
         const {outputField, updateType, fields} = values;
         const table = base.getTable(selectedTable);
         const records = await table.selectRecordsAsync();
-        setItem(FORM_STATE, values);
-        handleUpdateState({formValue: values});
+        globalConfig.setAsync("formValue", values);
+        let outputFieldExist = table.getFieldIfExists(outputField);
 
-        if (outputField) {
+        try {
             let result = records.records
                 .map((record) => {
                     const shouldUpdate = record.getCellValue(SHOULD_UPDATE);
 
                     if (shouldUpdate) {
+                        if (!outputFieldExist) {
+                            throw new Error(
+                                "Please add your output fields to the table"
+                            );
+                        }
+
                         const res = getFormatedValue(record, fields);
                         const payload = generatePayload(res);
-                        let imgPath = `https://imgfly.dorik.dev/t/${selectedTemplate.id}?${payload}`;
+                        let imgPath =
+                            API_URL + `/t/${selectedTemplate.id}?${payload}`;
 
                         let updateValue = imgPath;
                         if (updateType === "image") {
                             updateValue = [
                                 {
                                     url: imgPath,
-                                    filename: `${selectedTemplate.name}.png`,
+                                    filename: `${selectedTemplate?.name}.png`,
                                 },
                             ];
                         }
@@ -46,7 +52,11 @@ function useUpdateAirtableBase() {
                                 [outputField]: updateValue,
                             });
 
-                        if (!checkResult.hasPermission) return null;
+                        if (!checkResult.hasPermission) {
+                            throw new Error(
+                                "You are not allowed to update the selected output field"
+                            );
+                        }
                         return {
                             id: record.id,
                             fields: {
@@ -58,6 +68,16 @@ function useUpdateAirtableBase() {
                 .filter((v) => v);
             await table.updateRecordsAsync(result);
             setLoading(false);
+            notification.success({
+                placement: "bottomRight",
+                message: "Table successfully Updated",
+            });
+        } catch (error) {
+            setLoading(false);
+            notification.error({
+                placement: "bottomRight",
+                message: error.message,
+            });
         }
     };
     return {updateRecords, loading};

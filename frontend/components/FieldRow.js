@@ -1,20 +1,20 @@
-import React from "react";
+import React, {useState} from "react";
 import styled from "styled-components";
-import {MinusCircleOutlined} from "@ant-design/icons";
 import {Form, Select, Cascader} from "antd";
-import {useState} from "react";
-import {useContext} from "react";
-import {AirtableContext} from "../context/AirtableContext";
-import {useBase, useRecords} from "@airtable/blocks/ui";
-import {getAirtableFieldOpts} from "../utils/getAirtableFieldOpts";
+import {MinusCircleOutlined} from "@ant-design/icons";
 import useGetAirtableFields from "../hooks/useGetAirtableFields";
+import {getAirtableFieldOpts} from "../utils/getAirtableFieldOpts";
+import {useBase, useGlobalConfig, useRecords} from "@airtable/blocks/ui";
 
 function FieldRow({remove, name, form, ...restField}) {
     const base = useBase();
     const {airtableFields} = useGetAirtableFields();
     const type = form.getFieldValue("fields")[name]?.type;
     const [selectedType, setSelectedType] = useState(type || "");
-    const {selectedTable, selectedTemplate} = useContext(AirtableContext);
+
+    const globalConfig = useGlobalConfig();
+    const selectedTable = globalConfig.get("selectedTable");
+    const selectedTemplate = globalConfig.get("selectedTemplate");
     const records = useRecords(base.getTableByName(selectedTable));
 
     const layerOpts = selectedTemplate.layers.flatMap((layer) => {

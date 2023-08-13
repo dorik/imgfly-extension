@@ -1,11 +1,9 @@
-import {useBase} from "@airtable/blocks/ui";
-import React from "react";
-import {useContext} from "react";
-import {AirtableContext} from "../context/AirtableContext";
+import {useBase, useGlobalConfig} from "@airtable/blocks/ui";
 
 function useGetAirtableFields() {
     const base = useBase();
-    const {selectedTable} = useContext(AirtableContext);
+    const globalConfig = useGlobalConfig();
+    const selectedTable = globalConfig.get("selectedTable");
     const table = base.getTableByName(selectedTable);
 
     const airtableFields = table?.fields.map((field) => {

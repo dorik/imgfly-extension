@@ -1,21 +1,20 @@
-import React, {useContext} from "react";
+import React from "react";
 import styled from "styled-components";
-import {initializeBlock} from "@airtable/blocks/ui";
+import APIKey from "./components/APIKey";
 import DynamicForm from "./components/DynamicForm";
+import {initializeBlock, useGlobalConfig} from "@airtable/blocks/ui";
 import AirtableConfiguration from "./components/AirtableConfiguration";
 import TemplateConfiguration from "./components/TemplateConfiguration";
-import {
-    AirtableContext,
-    AirtableContextProvider,
-} from "./context/AirtableContext";
-import APIKey from "./components/APIKey";
 
 const Wrapper = styled.div`
     padding: 20px;
 `;
+
 const Configurations = () => {
-    const {apiKey, selectedTable, selectedTemplate} =
-        useContext(AirtableContext);
+    const globalConfig = useGlobalConfig();
+    const apiKey = globalConfig.get("apiKey");
+    const selectedTemplate = globalConfig.get("selectedTemplate");
+    const selectedTable = globalConfig.get("selectedTable");
     const enableForm = selectedTable && selectedTemplate?.id;
 
     if (!apiKey) return null;
@@ -29,14 +28,12 @@ const Configurations = () => {
     );
 };
 
-const AppComp = (props) => {
+const AppComp = () => {
     return (
-        <AirtableContextProvider>
-            <Wrapper>
-                <APIKey />
-                <Configurations />
-            </Wrapper>
-        </AirtableContextProvider>
+        <Wrapper>
+            <APIKey />
+            <Configurations />
+        </Wrapper>
     );
 };
 initializeBlock(AppComp);

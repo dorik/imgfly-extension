@@ -1,13 +1,14 @@
 import {Label} from "./Label";
 import styled from "styled-components";
 import {Button, Input} from "antd";
-import {AirtableContext} from "../context/AirtableContext";
 import {EditOutlined, SaveFilled} from "@ant-design/icons";
-import React, {useContext, useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
+import {useGlobalConfig} from "@airtable/blocks/ui";
 
 function APIKey() {
-    const {apiKey, handleUpdateState} = useContext(AirtableContext);
     const [state, setState] = useState({});
+    const globalConfig = useGlobalConfig();
+    const apiKey = globalConfig.get("apiKey");
 
     const handleChange = ({target}) => {
         setState((prev) => ({...prev, apiKey: target.value}));
@@ -17,7 +18,7 @@ function APIKey() {
     };
     const handleSave = () => {
         // set an API call
-        handleUpdateState({apiKey: state.apiKey});
+        globalConfig.setAsync("apiKey", state.apiKey);
         setState((prev) => ({...prev, disabled: true}));
     };
 
