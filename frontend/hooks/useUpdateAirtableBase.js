@@ -29,6 +29,11 @@ function useUpdateAirtableBase() {
             if (!outputFieldExist) {
                 throw new Error("Please add your output fields to the table");
             }
+            if (table.getFieldIfExists(SHOULD_UPDATE)?.type !== "checkbox") {
+                throw new Error(
+                    "Please add a checkbox field named as shouldUpdate to the table"
+                );
+            }
 
             const data = await table.selectRecordsAsync();
 
