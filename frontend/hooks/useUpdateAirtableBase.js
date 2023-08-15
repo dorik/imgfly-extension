@@ -1,12 +1,14 @@
-import {useState} from "react";
-import {SHOULD_UPDATE, API_URL} from "../const";
+import React, {useState} from "react";
+import {SHOULD_UPDATE} from "../const";
 import {generatePayload} from "../utils/generatePayload";
 import {getFormatedValue} from "../utils/getFormatedValue";
 import {useBase, useGlobalConfig} from "@airtable/blocks/ui";
 import {notification} from "antd";
+import {createImg} from "../app/queries/image";
 
 function useUpdateAirtableBase() {
     const globalConfig = useGlobalConfig();
+    const apiKey = globalConfig.get("apiKey");
     const selectedTable = globalConfig.get("selectedTable");
     const selectedTemplate = globalConfig.get("selectedTemplate");
     const [loading, setLoading] = useState(false);
@@ -15,33 +17,42 @@ function useUpdateAirtableBase() {
     const updateRecords = async ({values}) => {
         setLoading(true);
         const {outputField, updateType, fields} = values;
-        const table = base.getTable(selectedTable);
-        const records = await table.selectRecordsAsync();
+        const table = base.getTableByNameIfExists(selectedTable);
+
         globalConfig.setAsync("formValue", values);
-        let outputFieldExist = table.getFieldIfExists(outputField);
 
         try {
-            let result = records.records
-                .map((record) => {
-                    const shouldUpdate = record.getCellValue(SHOULD_UPDATE);
+            if (!table) {
+                throw new Error("Table doesn't exist");
+            }
+            let outputFieldExist = table.getFieldIfExists(outputField);
+            if (!outputFieldExist) {
+                throw new Error("Please add your output fields to the table");
+            }
 
-                    if (shouldUpdate) {
-                        if (!outputFieldExist) {
-                            throw new Error(
-                                "Please add your output fields to the table"
-                            );
+            const data = await table.selectRecordsAsync();
+
+            let result = await Promise.allSettled(
+                data.records
+                    .filter((record) => {
+                        return record.getCellValue(SHOULD_UPDATE);
+                    })
+                    .map(async (record, idx) => {
+                        const res = getFormatedValue(record, fields);
+                        const payload = generatePayload(
+                            res,
+                            selectedTemplate?.id
+                        );
+                        let data = await createImg({apiKey, payload});
+                        if (data?.status !== 201) {
+                            throw new Error(data?.message);
                         }
 
-                        const res = getFormatedValue(record, fields);
-                        const payload = generatePayload(res);
-                        let imgPath =
-                            API_URL + `/t/${selectedTemplate.id}?${payload}`;
-
-                        let updateValue = imgPath;
+                        let updateValue = data?.imgURL;
                         if (updateType === "image") {
                             updateValue = [
                                 {
-                                    url: imgPath,
+                                    url: data?.imgURL,
                                     filename: `${selectedTemplate?.name}.png`,
                                 },
                             ];
@@ -57,21 +68,61 @@ function useUpdateAirtableBase() {
                                 "You are not allowed to update the selected output field"
                             );
                         }
-                        return {
-                            id: record.id,
-                            fields: {
+                        if (data?.imgURL) {
+                            await table.updateRecordAsync(record.id, {
                                 [outputField]: updateValue,
-                            },
-                        };
-                    }
-                })
-                .filter((v) => v);
-            await table.updateRecordsAsync(result);
+                            });
+                        }
+                    })
+                    .filter((value) => value)
+            );
+
+            const successItems = result.filter(
+                (item) => item.status === "fulfilled"
+            );
+            const rejectedItems = result.filter(
+                (item) => item.status === "rejected"
+            );
+
+            const errorMsgs = [
+                ...new Set(rejectedItems.map((item) => item.reason?.message)),
+            ];
+            const successMsg =
+                successItems.length &&
+                `${successItems.length} is successfully updated`;
+
+            const ErrorMessage = () => {
+                return (
+                    <div>
+                        {errorMsgs.length} item failed to update due to:
+                        <ul style={{margin: 0, paddingLeft: 20}}>
+                            {errorMsgs.map((item) => (
+                                <li>{item}</li>
+                            ))}
+                        </ul>
+                    </div>
+                );
+            };
+
             setLoading(false);
-            notification.success({
-                placement: "bottomRight",
-                message: "Table successfully Updated",
-            });
+
+            // render error messages if action fail
+            errorMsgs.length &&
+                notification.error({
+                    placement: "bottomRight",
+                    message: <ErrorMessage />,
+                });
+
+            // render success messages when action is success
+            setTimeout(
+                () =>
+                    successMsg &&
+                    notification.success({
+                        placement: "bottomRight",
+                        message: successMsg,
+                    }),
+                100
+            );
         } catch (error) {
             setLoading(false);
             notification.error({

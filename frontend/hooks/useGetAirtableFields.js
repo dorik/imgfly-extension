@@ -4,7 +4,7 @@ function useGetAirtableFields() {
     const base = useBase();
     const globalConfig = useGlobalConfig();
     const selectedTable = globalConfig.get("selectedTable");
-    const table = base.getTableByName(selectedTable);
+    const table = base.getTableByNameIfExists(selectedTable);
 
     const airtableFields = table?.fields.map((field) => {
         return {

@@ -15,7 +15,8 @@ function FieldRow({remove, name, form, ...restField}) {
     const globalConfig = useGlobalConfig();
     const selectedTable = globalConfig.get("selectedTable");
     const selectedTemplate = globalConfig.get("selectedTemplate");
-    const records = useRecords(base.getTableByName(selectedTable));
+    const records =
+        useRecords(base.getTableByNameIfExists(selectedTable)) || [];
 
     const layerOpts = selectedTemplate.layers.flatMap((layer) => {
         return layer.fields.map((field) => ({

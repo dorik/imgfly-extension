@@ -1,11 +1,11 @@
-export const generatePayload = (arr) => {
-    return arr
-        .map(({path = [], value}) => {
-            const [name, type] = path.split(".");
-            if (value) {
-                return `${name}[${type}]=${encodeURIComponent(value)}`;
-            }
-        })
-        .filter((v) => v)
-        .join("&");
+export const generatePayload = (arr = [], template = "") => {
+    let modifications = arr.map(({path = [], value}) => {
+        const [name, type] = path.split(".");
+        return {
+            name,
+            [type]: value,
+        };
+    });
+
+    return {template, modifications};
 };

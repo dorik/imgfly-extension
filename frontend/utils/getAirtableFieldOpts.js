@@ -30,7 +30,7 @@ export const getAirtableFieldOpts = (fields, type, record) => {
             let attachmentFields = fields.filter(isAttachmentValueField);
 
             attachmentFields = attachmentFields.map((field) => {
-                let value = record.getCellValue(field.value);
+                let value = record?.getCellValue(field.value);
                 let opts = [];
 
                 if (value && value[0]) {
