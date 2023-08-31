@@ -36,57 +36,51 @@ function useUpdateAirtableBase() {
             }
 
             const data = await table.selectRecordsAsync();
-            const result = [];
-            const filteredItem = data.records.filter((record) => {
-                return record.getCellValue(SHOULD_UPDATE);
-            });
-            for (const record of filteredItem) {
-                try {
-                    const res = getFormatedValue(record, fields);
-                    const payload = generatePayload(res, selectedTemplate?.id);
-                    let data = await createImg({apiKey, payload});
-                    if (data?.status !== 201) {
-                        throw new Error(data?.message);
-                    }
 
-                    let updateValue = data?.imgURL;
-                    if (updateType === "image") {
-                        updateValue = [
-                            {
-                                url: data?.imgURL,
-                                filename: `${selectedTemplate?.name}.png`,
-                            },
-                        ];
-                    }
-
-                    const checkResult = table.checkPermissionsForUpdateRecord(
-                        record,
-                        {
-                            [outputField]: updateValue,
-                        }
-                    );
-
-                    if (!checkResult.hasPermission) {
-                        throw new Error(
-                            "You are not allowed to update the selected output field"
+            let result = await Promise.allSettled(
+                data.records
+                    .filter((record) => {
+                        return record.getCellValue(SHOULD_UPDATE);
+                    })
+                    .map(async (record, idx) => {
+                        const res = getFormatedValue(record, fields);
+                        const payload = generatePayload(
+                            res,
+                            selectedTemplate?.id
                         );
-                    }
-                    if (data?.imgURL) {
-                        await table.updateRecordAsync(record.id, {
-                            [outputField]: updateValue,
-                        });
-                        result.push({
-                            status: "fulfilled",
-                            message: "table successfully updated",
-                        });
-                    }
-                } catch (error) {
-                    result.push({
-                        status: "rejected",
-                        message: error.message,
-                    });
-                }
-            }
+                        let data = await createImg({apiKey, payload});
+                        if (data?.status !== 201) {
+                            throw new Error(data?.message);
+                        }
+
+                        let updateValue = data?.imgURL;
+                        if (updateType === "image") {
+                            updateValue = [
+                                {
+                                    url: data?.imgURL,
+                                    filename: `${selectedTemplate?.name}.png`,
+                                },
+                            ];
+                        }
+
+                        const checkResult =
+                            table.checkPermissionsForUpdateRecord(record, {
+                                [outputField]: updateValue,
+                            });
+
+                        if (!checkResult.hasPermission) {
+                            throw new Error(
+                                "You are not allowed to update the selected output field"
+                            );
+                        }
+                        if (data?.imgURL) {
+                            await table.updateRecordAsync(record.id, {
+                                [outputField]: updateValue,
+                            });
+                        }
+                    })
+                    .filter((value) => value)
+            );
 
             const successItems = result.filter(
                 (item) => item.status === "fulfilled"
@@ -96,16 +90,16 @@ function useUpdateAirtableBase() {
             );
 
             const errorMsgs = [
-                ...new Set(rejectedItems.map((item) => item?.message)),
+                ...new Set(rejectedItems.map((item) => item.reason?.message)),
             ];
             const successMsg =
                 successItems.length &&
-                `${successItems.length} field updated successfully`;
+                `${successItems.length} fields is successfully updated`;
 
             const ErrorMessage = () => {
                 return (
                     <div>
-                        {errorMsgs.length} field failed to update due to:
+                        {errorMsgs.length} fields failed to update due to:
                         <ul style={{margin: 0, paddingLeft: 20}}>
                             {errorMsgs.map((item) => (
                                 <li>{item}</li>
